@@ -1,0 +1,256 @@
+/* General */
+body, html, #root, .App {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f3f4f6;
+  scroll-behavior: smooth;
+
+}
+
+/* Navbar */
+nav {
+  background-color: #1f2937;
+  color: #fff;
+  padding: 1.25rem 2.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: box-shadow 0.3s ease, background-color 0.3s ease;
+}
+
+nav.scrolled {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  background-color: #111827;
+}
+
+nav h1 {
+  font-size: 1.75rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+nav a {
+  color: white;
+  text-decoration: none;
+  margin-left: 1.5rem;
+  transition: color 0.3s ease, transform 0.2s ease;
+}
+
+nav a:hover {
+  color: #d1d5db;
+  transform: translateY(-2px);
+}
+
+/* Hero Section */
+header {
+  background: linear-gradient(135deg, #6366f1, #a5b4fc);
+  padding: 6rem 1.5rem;
+  text-align: center;
+  color: #fff;
+}
+
+header h2 {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  animation: heroBounce 2s infinite alternate;
+}
+
+header p {
+  font-size: 1.125rem;
+  max-width: 40rem;
+  margin: 0 auto 2.5rem;
+  opacity: 0.85;
+}
+
+/* Hero Bounce */
+@keyframes heroBounce {
+  0% { transform: translateY(0px); }
+  100% { transform: translateY(-10px); }
+}
+
+/* Input Card */
+.input-card {
+  background-color: white;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  padding: 1.5rem;
+  border-radius: 2rem;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  gap: 1rem;
+  max-width: 30rem;
+  margin: 0 auto;
+  animation: fadeInUp 0.8s ease forwards;
+}
+
+.input-card input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid #d1d5db;
+  font-size: 1rem;
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.input-card input:focus {
+  transform: scale(1.03);
+  box-shadow: 0 0 15px rgba(99,102,241,0.6);
+  outline: none;
+}
+
+.input-card button {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: white;
+  font-weight: 600;
+  border: none;
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.input-card button:hover {
+  background: linear-gradient(135deg, #4338ca, #4f46e5);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
+/* Result Section */
+.result-section {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 4rem 1.5rem;
+  flex-wrap: wrap;
+}
+
+.result-card {
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: 1.5rem;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  text-align: center;
+  width: 12rem;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.8s ease forwards;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.result-card:nth-child(1) { animation-delay: 0.2s; }
+.result-card:nth-child(2) { animation-delay: 0.4s; }
+.result-card:nth-child(3) { animation-delay: 0.6s; }
+
+.result-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 25px rgba(0,0,0,0.15);
+}
+
+.result-card h3 {
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.result-card p {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Status Colors */
+.result-card.high-risk {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.result-card.medium-risk {
+  background-color: #fef3c7;
+  color: #b45309;
+}
+
+.result-card.safe {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+/* Footer */
+footer {
+  background-color: #1f2937;
+  color: white;
+  text-align: center;
+  padding: 1.5rem;
+  margin-top: auto;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Navbar Buttons */
+.nav-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.nav-btn {
+  padding: 0.6rem 1.25rem;
+  border-radius: 9999px; /* pill shape */
+  background: #fff;
+  color: #111827;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease;
+}
+
+.nav-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+}
+
+/* Variants */
+.nav-btn.primary {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+}
+
+.nav-btn.primary:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+}
+
+.nav-btn.danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #fff;
+}
+
+.nav-btn.danger:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+}
+
+/* Small delete buttons for Dashboard */
+.small-btn {
+  padding: 0.35rem 0.7rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: #ef4444;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+}
+
+.small-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.12);
+}
