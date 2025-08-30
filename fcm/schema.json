@@ -1,0 +1,11 @@
+{
+  "urls": {
+    "example1": {
+      "sector": "banking",
+      "url": "http://fakebank.com",
+      "type": "phishing"
+    }
+  },
+  "apps": {},
+  "content": {}
+}
