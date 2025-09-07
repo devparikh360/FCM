@@ -1,0 +1,7 @@
+{
+  "banking": ["bank", "payment", "wallet", "loan", "credit", "finance", "paypal", "atm", "secure", "verify", ".finance"],
+  "social": ["facebook", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "social", "friends", "followers"],
+  "crypto": ["crypto", "bitcoin", "eth", "ethereum", "walletconnect", "binance", "coin", "nft", "dex", "defi"],
+  "shopping": ["amazon", "ebay", "aliexpress", "shop", "store", "deal", "sale", "discount"],
+  "gaming": ["steam", "roblox", "minecraft", "game", "play", "pubg", "fortnite"]
+}

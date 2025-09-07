@@ -69,7 +69,7 @@ function App() {
     setHistory(prev);
   };
 
-  /*// Check URL -> call backend API and map response to the same shape your UI expects
+// Check URL -> call backend API and map response to the same shape your UI expects
 // Example: check a URL
 async function checkUrl(url) {
   try {
@@ -113,7 +113,7 @@ async function checkUrl(url) {
     setResult({ url, score: null, status: "Error: " + error.message });
   }
 }
-*/
+/*
 function checkUrl(url) {
     // generate random score
     const score = Math.floor(Math.random() * 101); // 0–100
@@ -133,6 +133,7 @@ function checkUrl(url) {
       saveToHistory({ ...normalized, createdAt: new Date().toISOString() });
     }
   }
+    */
   
   // Scroll to top / hero section (Home)
   const scrollToTop = (e) => {

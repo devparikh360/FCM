@@ -1,0 +1,511 @@
+{
+    "3618495": [
+        {
+            "dateadded": "2025-09-06 08:44:26 UTC",
+            "url": "http://42.224.172.78:33546/i",
+            "url_status": "online",
+            "last_online": "2025-09-06 08:44:26 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "32-bit",
+                "elf",
+                "mips",
+                "Mozi"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618495/",
+            "reporter": "geenensp"
+        }
+    ],
+    "3618494": [
+        {
+            "dateadded": "2025-09-06 08:43:27 UTC",
+            "url": "http://222.138.101.144:38384/i",
+            "url_status": "online",
+            "last_online": "2025-09-06 08:43:27 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "32-bit",
+                "elf",
+                "mips",
+                "Mozi"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618494/",
+            "reporter": "geenensp"
+        }
+    ],
+    "3618493": [
+        {
+            "dateadded": "2025-09-06 08:38:41 UTC",
+            "url": "http://115.50.51.241:37961/i",
+            "url_status": "online",
+            "last_online": "2025-09-06 08:38:41 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "32-bit",
+                "elf",
+                "mips",
+                "Mozi"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618493/",
+            "reporter": "geenensp"
+        }
+    ],
+    "3618492": [
+        {
+            "dateadded": "2025-09-06 08:31:26 UTC",
+            "url": "http://42.233.104.230:60985/i",
+            "url_status": "online",
+            "last_online": "2025-09-06 08:31:26 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "32-bit",
+                "elf",
+                "mips",
+                "Mozi"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618492/",
+            "reporter": "geenensp"
+        }
+    ],
+    "3618491": [
+        {
+            "dateadded": "2025-09-06 08:31:24 UTC",
+            "url": "http://79.106.231.174:48440/i",
+            "url_status": "online",
+            "last_online": "2025-09-06 08:31:24 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "32-bit",
+                "arm",
+                "elf",
+                "mirai",
+                "Mozi"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618491/",
+            "reporter": "geenensp"
+        }
+    ],
+    "3618490": [
+        {
+            "dateadded": "2025-09-06 08:20:10 UTC",
+            "url": "https://mx.puva6ey2.ru/zxoi3vmkax.pdf",
+            "url_status": "online",
+            "last_online": "2025-09-06 08:20:10 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "ClearFake"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618490/",
+            "reporter": "anonymous"
+        }
+    ],
+    "3618489": [
+        {
+            "dateadded": "2025-09-06 08:12:23 UTC",
+            "url": "http://42.224.172.78:33546/bin.sh",
+            "url_status": "offline",
+            "last_online": null,
+            "threat": "malware_download",
+            "tags": [
+                "32-bit",
+                "elf",
+                "mips",
+                "Mozi"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618489/",
+            "reporter": "geenensp"
+        }
+    ],
+    "3618488": [
+        {
+            "dateadded": "2025-09-06 07:55:12 UTC",
+            "url": "http://27.215.214.255:42808/i",
+            "url_status": "online",
+            "last_online": "2025-09-06 08:37:49 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "32-bit",
+                "elf",
+                "mips",
+                "Mozi"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618488/",
+            "reporter": "geenensp"
+        }
+    ],
+    "3618487": [
+        {
+            "dateadded": "2025-09-06 07:49:14 UTC",
+            "url": "http://175.165.134.140:37791/bin.sh",
+            "url_status": "online",
+            "last_online": "2025-09-06 07:49:14 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "32-bit",
+                "elf",
+                "mips",
+                "Mozi"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618487/",
+            "reporter": "geenensp"
+        }
+    ],
+    "3618486": [
+        {
+            "dateadded": "2025-09-06 07:49:07 UTC",
+            "url": "https://mx.puva6ey2.ru/0a0csm4ju2.pdf",
+            "url_status": "offline",
+            "last_online": "2025-09-06 07:49:07 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "ClearFake"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618486/",
+            "reporter": "anonymous"
+        }
+    ],
+    "3618485": [
+        {
+            "dateadded": "2025-09-06 07:38:14 UTC",
+            "url": "http://182.116.39.46:53440/bin.sh",
+            "url_status": "offline",
+            "last_online": "2025-09-06 07:38:14 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "32-bit",
+                "elf",
+                "mips",
+                "Mozi"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618485/",
+            "reporter": "geenensp"
+        }
+    ],
+    "3618484": [
+        {
+            "dateadded": "2025-09-06 07:37:13 UTC",
+            "url": "http://125.40.152.18:47415/i",
+            "url_status": "online",
+            "last_online": "2025-09-06 07:37:13 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "32-bit",
+                "elf",
+                "mips",
+                "Mozi"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618484/",
+            "reporter": "geenensp"
+        }
+    ],
+    "3618483": [
+        {
+            "dateadded": "2025-09-06 07:28:15 UTC",
+            "url": "http://185.238.191.89:5554/beba.exe",
+            "url_status": "online",
+            "last_online": "2025-09-06 07:28:15 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "ua-wget"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618483/",
+            "reporter": "anonymous"
+        }
+    ],
+    "3618480": [
+        {
+            "dateadded": "2025-09-06 07:28:09 UTC",
+            "url": "http://events.api.o365drive-support.com/bins/debug",
+            "url_status": "online",
+            "last_online": "2025-09-06 07:28:09 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "botnetdomain",
+                "elf",
+                "mirai",
+                "ua-wget"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618480/",
+            "reporter": "anonymous"
+        }
+    ],
+    "3618481": [
+        {
+            "dateadded": "2025-09-06 07:28:09 UTC",
+            "url": "http://bot.orcacrash.site/wget.sh",
+            "url_status": "offline",
+            "last_online": "2025-09-06 07:28:09 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "botnetdomain",
+                "mirai",
+                "sh",
+                "ua-wget"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618481/",
+            "reporter": "anonymous"
+        }
+    ],
+    "3618482": [
+        {
+            "dateadded": "2025-09-06 07:28:09 UTC",
+            "url": "http://bot.orcacrash.site/rt.sh",
+            "url_status": "online",
+            "last_online": "2025-09-06 07:28:09 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "botnetdomain",
+                "sh",
+                "ua-wget"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618482/",
+            "reporter": "anonymous"
+        }
+    ],
+    "3618479": [
+        {
+            "dateadded": "2025-09-06 07:28:08 UTC",
+            "url": "http://182.117.146.53:40601/i",
+            "url_status": "online",
+            "last_online": "2025-09-06 08:23:04 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "32-bit",
+                "elf",
+                "mips",
+                "Mozi"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618479/",
+            "reporter": "geenensp"
+        }
+    ],
+    "3618478": [
+        {
+            "dateadded": "2025-09-06 07:28:07 UTC",
+            "url": "https://mx.puva6ey2.ru/s7qi896nui.pdf",
+            "url_status": "online",
+            "last_online": "2025-09-06 07:28:07 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "ClearFake"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618478/",
+            "reporter": "anonymous"
+        }
+    ],
+    "3618476": [
+        {
+            "dateadded": "2025-09-06 07:12:29 UTC",
+            "url": "http://115.50.51.241:37961/bin.sh",
+            "url_status": "offline",
+            "last_online": "2025-09-06 07:12:29 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "32-bit",
+                "elf",
+                "mips",
+                "Mozi"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618476/",
+            "reporter": "geenensp"
+        }
+    ],
+    "3618473": [
+        {
+            "dateadded": "2025-09-06 07:12:28 UTC",
+            "url": "http://bot.orcacrash.site/m68k",
+            "url_status": "online",
+            "last_online": "2025-09-06 07:12:28 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "botnetdomain",
+                "elf",
+                "mirai",
+                "ua-wget"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618473/",
+            "reporter": "anonymous"
+        }
+    ],
+    "3618474": [
+        {
+            "dateadded": "2025-09-06 07:12:28 UTC",
+            "url": "http://bot.orcacrash.site/arc",
+            "url_status": "offline",
+            "last_online": "2025-09-06 07:12:28 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "botnetdomain",
+                "elf",
+                "mirai",
+                "ua-wget"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618474/",
+            "reporter": "anonymous"
+        }
+    ],
+    "3618475": [
+        {
+            "dateadded": "2025-09-06 07:12:28 UTC",
+            "url": "http://bot.orcacrash.site/mipsel",
+            "url_status": "online",
+            "last_online": "2025-09-06 08:11:27 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "botnetdomain",
+                "elf",
+                "mirai",
+                "ua-wget"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618475/",
+            "reporter": "anonymous"
+        }
+    ],
+    "3618469": [
+        {
+            "dateadded": "2025-09-06 07:12:27 UTC",
+            "url": "http://bot.orcacrash.site/arm4",
+            "url_status": "online",
+            "last_online": "2025-09-06 07:12:27 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "botnetdomain",
+                "elf",
+                "gafgyt",
+                "ua-wget"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618469/",
+            "reporter": "anonymous"
+        }
+    ],
+    "3618470": [
+        {
+            "dateadded": "2025-09-06 07:12:27 UTC",
+            "url": "http://www.cnnetwork.uk/bins/morte.i686",
+            "url_status": "online",
+            "last_online": "2025-09-06 08:07:40 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "botnetdomain",
+                "elf",
+                "mirai",
+                "ua-wget"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618470/",
+            "reporter": "anonymous"
+        }
+    ],
+    "3618471": [
+        {
+            "dateadded": "2025-09-06 07:12:27 UTC",
+            "url": "http://acc.o365drive-support.com/bins/morte.x86_64",
+            "url_status": "online",
+            "last_online": "2025-09-06 07:12:27 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "botnetdomain",
+                "elf",
+                "mirai",
+                "ua-wget"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618471/",
+            "reporter": "anonymous"
+        }
+    ],
+    "3618472": [
+        {
+            "dateadded": "2025-09-06 07:12:27 UTC",
+            "url": "http://bot.orcacrash.site/bins/abba.mipsel",
+            "url_status": "online",
+            "last_online": "2025-09-06 07:12:27 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "botnetdomain",
+                "elf",
+                "mirai",
+                "ua-wget"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618472/",
+            "reporter": "anonymous"
+        }
+    ],
+    "3618466": [
+        {
+            "dateadded": "2025-09-06 07:12:26 UTC",
+            "url": "http://38.162.114.77/bins/sora.i686",
+            "url_status": "offline",
+            "last_online": null,
+            "threat": "malware_download",
+            "tags": [
+                "elf",
+                "ua-wget"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618466/",
+            "reporter": "abuse_ch"
+        }
+    ],
+    "3618467": [
+        {
+            "dateadded": "2025-09-06 07:12:26 UTC",
+            "url": "http://38.162.114.77/bins/sora.x86_64",
+            "url_status": "offline",
+            "last_online": null,
+            "threat": "malware_download",
+            "tags": [
+                "elf",
+                "ua-wget"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618467/",
+            "reporter": "abuse_ch"
+        }
+    ],
+    "3618468": [
+        {
+            "dateadded": "2025-09-06 07:12:26 UTC",
+            "url": "http://38.162.114.77/bins/sora.ppc440fp",
+            "url_status": "offline",
+            "last_online": null,
+            "threat": "malware_download",
+            "tags": [
+                "elf",
+                "ua-wget"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618468/",
+            "reporter": "abuse_ch"
+        }
+    ],
+    "3618465": [
+        {
+            "dateadded": "2025-09-06 07:12:23 UTC",
+            "url": "http://182.117.146.53:40601/bin.sh",
+            "url_status": "online",
+            "last_online": "2025-09-06 07:12:23 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "32-bit",
+                "elf",
+                "mips",
+                "Mozi"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618465/",
+            "reporter": "geenensp"
+        }
+    ],
+    "3618448": [
+        {
+            "dateadded": "2025-09-06 07:12:22 UTC",
+            "url": "http://events.api.o365drive-support.com/bins/morte.x86_64",
+            "url_status": "online",
+            "last_online": "2025-09-06 07:12:22 UTC",
+            "threat": "malware_download",
+            "tags": [
+                "botnetdomain",
+                "elf",
+                "mirai",
+                "ua-wget"
+            ],
+            "urlhaus_link": "https://urlhaus.abuse.ch/url/3618448/",
+            "reporter": "anonymous"
+        }
+    ]
+}

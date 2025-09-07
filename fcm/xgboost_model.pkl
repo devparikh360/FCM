@@ -1,0 +1,77 @@
+# train_model.py
+import os
+import json
+import joblib
+import xgboost as xgb
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, accuracy_score
+
+# -------- Paths --------
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+SCHEMA_FILE = os.path.join(ROOT_DIR, "schema.json")
+MODEL_FILE = os.path.join(ROOT_DIR, "xgboost_model.pkl")
+
+# -------- Load Schema Data --------
+with open(SCHEMA_FILE, "r", encoding="utf-8") as f:
+    schema = json.load(f)
+
+# -------- Convert schema into DataFrame --------
+rows = []
+total = len(schema['urls']) + len(schema['apps']) + len(schema['content'])
+counter = 0
+
+for bucket in ["urls", "apps", "content"]:
+    for k, v in schema[bucket].items():
+        row = v.copy()
+        row['type'] = bucket
+        # Example: if 'threat_label' is your target label
+        row['label'] = 1 if v.get('threat_label', '') != 'legit' else 0
+        rows.append(row)
+        
+        counter += 1
+        if counter % 50 == 0 or counter == total:
+            print(f"Processed {counter}/{total} entries")
+
+df = pd.DataFrame(rows)
+
+# -------- Features & Labels --------
+# Drop non-numeric / irrelevant fields
+drop_cols = ["sector", "source", "file_name", "file_type", "collected_at", "label"]
+X = df.drop(columns=drop_cols, errors='ignore')
+# Convert non-numeric columns to category codes
+for col in X.select_dtypes(include='object').columns:
+    X[col] = X[col].astype('category').cat.codes
+
+y = df['label']
+
+# Train/test split
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
+
+# -------- Train XGBoost --------
+model = xgb.XGBClassifier(
+    n_estimators=200,
+    learning_rate=0.1,
+    max_depth=6,
+    subsample=0.8,
+    colsample_bytree=0.8,
+    use_label_encoder=False,
+    eval_metric="logloss",
+    random_state=42
+)
+
+print("\nTraining model...")
+model.fit(X_train, y_train)
+print("Training complete!")
+
+# -------- Evaluate --------
+y_pred = model.predict(X_test)
+print("\nModel Performance:")
+print("Accuracy:", accuracy_score(y_test, y_pred))
+print(classification_report(y_test, y_pred))
+
+# -------- Save Model --------
+joblib.dump(model, "xgboost_model.pkl")
+print(f"\n Model saved to {MODEL_FILE}")
