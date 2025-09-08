@@ -37,7 +37,7 @@ def detect_url(data: URLInput):
     Detect fraud for a URL
     """
     result = score_url(data.url, data.sector)
-    return result
+    return {"url": data.url, "result": result}  # <- wrap in "result"
 
 @app.post("/detect/app")
 def detect_app(data: AppInput):
@@ -45,7 +45,7 @@ def detect_app(data: AppInput):
     Detect fraud for an app (APK or IPA)
     """
     result = score_app(data.url, platform=data.platform, sector=data.sector)
-    return result
+    return {"url": data.url, "result": result}  # <- wrap in "result"
 
 @app.post("/detect/content")
 def detect_content(data: ContentInput):
@@ -53,7 +53,7 @@ def detect_content(data: ContentInput):
     Detect fraud for uploaded content/file URL
     """
     result = score_content(data.url, data.sector)
-    return result
+    return {"url": data.url, "result": result}  # <- wrap in "result"
 
 # --- Health check endpoint ---
 @app.get("/health")

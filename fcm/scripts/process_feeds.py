@@ -4,24 +4,23 @@ import glob
 import sys
 from datetime import datetime
 from time import time
-#from engine import score_url, score_app, score_content
-#from sectors import detect_sector
 from detection.engine import score_url, score_app, score_content
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ROOT_DIR)
 
-# Load sector keywords from sectors.json
+# Load sector keywords
 SECTOR_FILE = os.path.join(ROOT_DIR, "sectors.json")
 with open(SECTOR_FILE, "r") as f:
     SECTOR_KEYWORDS = json.load(f)
 
-def detect_sector(url: str) -> str:
-    u = url.lower()
-    for sector, keywords in SECTOR_KEYWORDS.items():
-        if any(k in u for k in keywords):
-            return sector
-    return "general"
+# Load trained URLs to skip
+TRAINED_FILE = os.path.join(ROOT_DIR, "trained_urls.json")
+if os.path.exists(TRAINED_FILE):
+    with open(TRAINED_FILE, "r", encoding="utf-8") as f:
+        trained_urls = set(json.load(f))
+else:
+    trained_urls = set()
 
 DATA_DIR = "data"
 OUTPUT_FILE = "schema.json"
@@ -36,6 +35,14 @@ def classify_type(url: str) -> str:
     else:
         return "url"
 
+# -------- Detect sector ----------
+def detect_sector(url: str) -> str:
+    u = url.lower()
+    for sector, keywords in SECTOR_KEYWORDS.items():
+        if any(k in u for k in keywords):
+            return sector
+    return "general"
+
 # -------- Process URLHAUS ----------
 def process_urlhaus(file_path: str) -> dict:
     results = {"urls": {}, "apps": {}, "content": {}}
@@ -46,11 +53,11 @@ def process_urlhaus(file_path: str) -> dict:
         print(f"Error reading {file_path}: {e}")
         return results
 
-    for idx, (_, entries) in enumerate(data.items(), 1):
-        for j, entry in enumerate(entries, 1):
+    for _, entries in data.items():
+        for entry in entries:
             url = entry.get("url")
             threat = entry.get("threat", "unknown")
-            if not url:
+            if not url or url in trained_urls:  # skip already trained
                 continue
 
             sector = detect_sector(url)
@@ -78,9 +85,6 @@ def process_urlhaus(file_path: str) -> dict:
 
             results[typ + "s"][url] = result
 
-            if j % 100 == 0:
-                print(f"  Processed {j} entries in {os.path.basename(file_path)}")
-
     return results
 
 # -------- Process ADBLOCK ----------
@@ -93,9 +97,9 @@ def process_adblock(file_path: str) -> dict:
         print(f"Error reading {file_path}: {e}")
         return results
 
-    for idx, line in enumerate(lines, 1):
+    for line in lines:
         line = line.strip()
-        if not line or line.startswith("!"):
+        if not line or line.startswith("!") or line in trained_urls:
             continue
 
         if line.startswith("||") and "^" in line:
@@ -123,9 +127,6 @@ def process_adblock(file_path: str) -> dict:
 
         results["urls"][url] = result
 
-        if idx % 100 == 0:
-            print(f"  Processed {idx} lines in {os.path.basename(file_path)}")
-
     return results
 
 # -------- Process Feed TXT ----------
@@ -138,9 +139,9 @@ def process_feed(file_path: str) -> dict:
         print(f"Error reading {file_path}: {e}")
         return results
 
-    for idx, line in enumerate(lines, 1):
+    for line in lines:
         url = line.strip()
-        if not url or url.startswith("#"):
+        if not url or url.startswith("#") or url in trained_urls:
             continue
 
         sector = detect_sector(url)
@@ -167,9 +168,6 @@ def process_feed(file_path: str) -> dict:
         })
 
         results[typ + "s"][url] = result
-
-        if idx % 100 == 0:
-            print(f"  Processed {idx} lines in {os.path.basename(file_path)}")
 
     return results
 

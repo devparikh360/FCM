@@ -2,47 +2,26 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-# Import detection functions from your engine
-from detection.engine import score_url, score_content, score_app  
+# Import your detection engine
+from detection.engine import score_url  
 
 app = Flask(__name__)
-CORS(app)
+CORS(app)  # allow React dev server to call
 
-
-# --- Detect URL ---
 @app.route("/detect/url", methods=["POST"])
 def detect_url():
     data = request.get_json()
     url = data.get("url")
     if not url:
         return jsonify({"error": "Missing 'url'"}), 400
-    
-    result = score_url(url)   # Calls detection engine
+
+    # Call your trained model
+    try:
+        result = score_url(url)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
     return jsonify({"url": url, "result": result})
-
-
-# --- Detect Text Content ---
-@app.route("/detect/content", methods=["POST"])
-def detect_content():
-    data = request.get_json()
-    content = data.get("content")
-    if not content:
-        return jsonify({"error": "Missing 'content'"}), 400
-    
-    result = score_content(content)   # Calls detection engine
-    return jsonify({"content": content, "result": result})
-
-
-# --- Detect App Metadata ---
-@app.route("/detect/app", methods=["POST"])
-def detect_app():
-    data = request.get_json()
-    app_info = data.get("app_info")
-    if not app_info:
-        return jsonify({"error": "Missing 'app_info'"}), 400
-    
-    result = score_app(app_info)   # Calls detection engine
-    return jsonify({"app_info": app_info, "result": result})
 
 
 if __name__ == "__main__":

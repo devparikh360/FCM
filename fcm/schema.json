@@ -32558,6 +32558,14 @@
       },
       "threat_label": "legit",
       "sector": "general"
+    },
+    "http://test-malicious.com": {
+      "threat_label": "malicious",
+      "description": "Test malicious URL"
+    },
+    "http://safe-example.com": {
+      "threat_label": "legit",
+      "description": "Test safe URL"
     }
   },
   "apps": {

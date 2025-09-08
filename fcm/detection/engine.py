@@ -7,6 +7,9 @@ import os
 import numpy as np
 import xgboost as xgb
 import json
+from .features_url import extract_url_features, is_valid_url
+
+
 
 # --- Load ML model ---
 ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -23,13 +26,12 @@ if os.path.exists(MODEL_PATH):
         with open(FEATURES_PATH, "r") as f:
             TRAINED_FEATURES = json.load(f)
     else:
-        # fallback to booster feature names
         try:
             TRAINED_FEATURES = ml_model.get_booster().feature_names
         except:
             TRAINED_FEATURES = []
 else:
-    print("ML model not found. Only rule-based scoring will be used.")
+    print("⚠️ ML model not found. Only rule-based scoring will be used.")
 
 # --- helper: apply sector boost ---
 def apply_sector_boost(reasons, sector):
@@ -44,16 +46,14 @@ def apply_ml_score(features, reasons):
     if ml_model is None or not TRAINED_FEATURES:
         return reasons
 
-    # --- Prepare input vector in correct feature order ---
     X_vec = []
     for f_name in TRAINED_FEATURES:
         val = features.get(f_name, 0)
 
-        # --- Convert types to numeric ---
         if isinstance(val, list):
-            val = "_".join([str(v) for v in val])  # lists -> joined string
+            val = "_".join([str(v) for v in val])
         if isinstance(val, str):
-            val = hash(val) % 1000  # consistent numeric encoding
+            val = hash(val) % 1000
         elif isinstance(val, bool):
             val = int(val)
         elif val is None:
@@ -63,95 +63,158 @@ def apply_ml_score(features, reasons):
     X_vec = np.array([X_vec])
 
     try:
-        ml_prob = ml_model.predict_proba(X_vec)[0][1]  # probability of fraudulent
+        ml_prob = ml_model.predict_proba(X_vec)[0][1]
 
         print("ML input vector:", X_vec)
         print("ML predicted probability:", ml_prob)
 
-        # Scale to 0–50 points, but make sure small probabilities don't get stuck at 0
-        ml_points = max(0, min(50, int(ml_prob * 50)))
-
-        reasons.append({
-            "reason": f"ML model prediction ({ml_prob:.2f} probability)",
-            "points": ml_points
-        })
+        ml_points = int(ml_prob * 100)
+        if ml_points > 0:
+            reasons.append({
+                "reason": "ML model flagged as suspicious",
+                "points": ml_points
+            })
     except Exception as e:
         reasons.append({"reason": "ML scoring failed", "points": 0})
         print("⚠️ ML model scoring failed:", e)
 
     return reasons
 
+#-------ports----------------
 
-# ---------- URL ----------
+def check_uncommon_port(parsed) -> bool:
+    if parsed.port is None:
+        return False
+    return parsed.port not in [80, 443]
+
+from datetime import datetime
+from urllib.parse import urlparse
+
+# ---------- URL scoring ----------
+def score_input(u: str, sector="general") -> dict:
+    if not is_valid_url(u):
+        return {
+            "type": "unknown",
+            "input": u,
+            "sector": sector,
+            "features": {},
+            "reasons": [{"reason": "Input is not a valid URL", "points": 0}],
+            "score": 0,
+            "status": "Unknown",
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+    return score_url(u, sector)
+
 def score_url(u: str, sector="general") -> dict:
     f = extract_url_features(u)
     reasons = []
 
-    # High severity
-    if f["host_is_ip"]:
+    # --- Whitelist ---
+    if f.get("is_legit", False):
+        reasons.append({"reason": "Domain in top 1M whitelist", "points": -30})
+
+    # --- High severity ---
+    if f.get("host_is_ip", False):
         reasons.append({"reason": "Host is an IP address", "points": 30})
-    if f["is_punycode"]:
-        reasons.append({"reason": "Punycode host", "points": 25})
-    if f["tld_suspicious"]:
-        reasons.append({"reason": f"Suspicious TLD .{f['tld']}", "points": 20})
-    if f["homograph"]:
-        reasons.append({"reason": "Homograph domain detected", "points": 25})
 
-    # Domain age
-    if 0 <= f["domain_age_days"] < 30:
-        reasons.append({"reason": f"Domain very new ({f['domain_age_days']} days)", "points": 30})
-    elif 0 <= f["domain_age_days"] < 180:
-        reasons.append({"reason": f"Domain fairly new ({f['domain_age_days']} days)", "points": 15})
+    if f.get("uncommon_port", False):
+        reasons.append({"reason": f"Uncommon port {f.get('port')}", "points": 20})
 
-    # SSL
-    if f["scheme"] == "https" and not f["ssl_valid"]:
+    # --- Punycode & Homograph ---
+    if "punycode" in f:
+        p = f["punycode"]
+        if p.get("is_punycode", False):
+            if p.get("contains_homoglyphs", False):
+                reasons.append({
+                    "reason": "Suspicious Punycode host with homoglyphs",
+                    "points": p.get("punycode_severity", 20)
+                })
+            else:
+                reasons.append({
+                    "reason": "Punycode host",
+                    "points": p.get("punycode_severity", 15)
+                })
+
+    # --- Suspicious TLD ---
+    if f.get("tld_suspicious", False):
+        reasons.append({"reason": f"Suspicious TLD .{f.get('tld','')}", "points": 20})
+
+    # --- Domain age ---
+    age = f.get("domain_age_days", -1)
+    if 0 <= age < 30:
+        reasons.append({"reason": f"Domain very new ({age} days)", "points": 30})
+    elif 0 <= age < 180:
+        reasons.append({"reason": f"Domain fairly new ({age} days)", "points": 15})
+
+    # --- SSL ---
+    if f.get("scheme") == "https" and not f.get("ssl_valid", 1):
         reasons.append({"reason": "HTTPS but invalid/expired SSL", "points": 15})
 
-    # Brand similarity
-    if f["brand_similarity"]:
+    # --- Brand similarity ---
+    if isinstance(f.get("brand_similarity"), dict):
         for brand, dist in f["brand_similarity"].items():
-            reasons.append({
-                "reason": f"Domain similar to brand '{brand}' (edit distance {dist})",
-                "points": 25 if dist == 1 else 15
-            })
+            if dist <= 2:
+                reasons.append({
+                    "reason": f"Domain similar to brand '{brand}'",
+                    "points": 25 if dist == 1 else 15
+                })
+    elif f.get("brand_similarity_score", 99) <= 2:
+        reasons.append({"reason": "Brand similarity detected", "points": 10})
 
-    # Redirects
-    if f["redirect_count"] > 3:
+    # --- Redirects ---
+    if f.get("redirect_count", 0) > 3:
         reasons.append({"reason": f"Excessive redirects ({f['redirect_count']})", "points": 10})
 
-    # Medium severity
-    if f["contains_at"]:
+    # --- Medium severity ---
+    if f.get("contains_at", False):
         reasons.append({"reason": "@ symbol in URL", "points": 15})
-    if f["hyphens"] >= 3:
+    if f.get("hyphens", 0) >= 3:
         reasons.append({"reason": "Many hyphens in host", "points": 10})
-    if f["subdomain_depth"] >= 4:
+    if f.get("subdomain_depth", 0) >= 4:
         reasons.append({"reason": "Deep subdomain nesting", "points": 15})
-    if f["digits_ratio"] > 0.3:
-        reasons.append({"reason": "High digits ratio in URL", "points": 15})
 
-    # Length
-    if f["length"] > 120:
+    # --- Digits in domain ---
+    digits_ratio = f.get("digits_ratio", 0)
+    if digits_ratio > 0.5:
+        reasons.append({"reason": "Host mostly digits", "points": 25})
+    elif digits_ratio > 0.3:
+        reasons.append({"reason": "High digits ratio in host", "points": 15})
+
+    # --- Length ---
+    length = f.get("length", 0)
+    if length > 120:
         reasons.append({"reason": "Very long URL", "points": 20})
-    elif f["length"] > 75:
+    elif length > 75:
         reasons.append({"reason": "Long URL", "points": 10})
 
-    # Suspicious words
-    if f["word_hits"]:
-        reasons.append({"reason": f"Suspicious words in path: {', '.join(f['word_hits'])}", "points": 20})
+    # --- Suspicious words ---
+    if f.get("word_hits"):
+        reasons.append({
+            "reason": f"Suspicious words in path: {', '.join(f['word_hits'])}",
+            "points": 20
+        })
 
-    # Safe bonuses
-    if f["scheme"] == "https" and not reasons:
+    # --- Safe bonuses ---
+    if f.get("scheme") == "https" and not reasons:
         reasons.append({"reason": "HTTPS present (safe signal)", "points": -5})
-    if f["domain_age_days"] > 365 and not reasons:
+    if age > 365 and not reasons:
         reasons.append({"reason": "Domain older than 1 year (trust signal)", "points": -5})
 
-    # Sector boost
-    reasons = apply_sector_boost(reasons, sector)
+    # --- NLP Phish ---
+    nlp_score = f.get("nlp_phish_score", 0)
+    if nlp_score > 0.6:
+        reasons.append({"reason": "Phishing language detected (NLP)", "points": 25})
+    elif nlp_score > 0.3:
+        reasons.append({"reason": "Suspicious wording (NLP)", "points": 10})
 
-    # ML integration
+    # --- Sector + ML ---
+    reasons = apply_sector_boost(reasons, sector)
     reasons = apply_ml_score(f, reasons)
 
+    # --- Final score ---
     score = score_from_reasons(reasons)
+    status = status_from_score(score)
+
     return {
         "type": "url",
         "url": u,
@@ -159,22 +222,19 @@ def score_url(u: str, sector="general") -> dict:
         "features": f,
         "reasons": reasons,
         "score": score,
-        "status": status_from_score(score),
+        "status": status,
         "timestamp": datetime.utcnow().isoformat() + "Z"
     }
-
 # ---------- APP ----------
 def score_app(u: str, platform="android", sector="general") -> dict:
     f = extract_app_features(u, platform=platform)
     reasons = []
 
-    # High severity
     if f["direct_apk"]:
         reasons.append({"reason": "Direct APK download (bypass store)", "points": 40})
     if f.get("direct_ipa", False):
         reasons.append({"reason": "Direct IPA download (bypass store)", "points": 40})
 
-    # Medium severity
     if not f["is_official_store"]:
         reasons.append({"reason": "Not official app store", "points": 25})
     if f["scam_hits"]:
@@ -184,30 +244,23 @@ def score_app(u: str, platform="android", sector="general") -> dict:
     if f.get("contains_id_param", False) and not f["is_official_store"]:
         reasons.append({"reason": "Contains suspicious ID parameter", "points": 10})
 
-    # URL length
     if f["length"] > 100:
         reasons.append({"reason": "Very long URL", "points": 10})
     elif f["length"] < 15:
         reasons.append({"reason": "Extremely short URL", "points": 10})
 
-    # HTTPS
     if not f.get("https", False):
         reasons.append({"reason": "Non-HTTPS URL", "points": 15})
 
-    # Platform mismatch
     if platform == "android" and f.get("direct_ipa", False):
         reasons.append({"reason": "iOS IPA on Android platform", "points": 20})
     if platform == "ios" and f.get("direct_apk", False):
         reasons.append({"reason": "Android APK on iOS platform", "points": 20})
 
-    # Safe bonus
     if f["is_official_store"] and not reasons:
         reasons.append({"reason": "Official store link (safe)", "points": -15})
 
-    # Sector boost
     reasons = apply_sector_boost(reasons, sector)
-
-    # ML integration
     reasons = apply_ml_score(f, reasons)
 
     score = score_from_reasons(reasons)
@@ -228,7 +281,6 @@ def score_content(u: str, sector="general") -> dict:
     f = extract_content_features(u)
     reasons = []
 
-    # High severity
     if f["is_dangerous"]:
         reasons.append({"reason": f"Dangerous file type {f['ext']}", "points": 40})
     if f["suspicious_patterns"]:
@@ -238,7 +290,6 @@ def score_content(u: str, sector="general") -> dict:
     if f["special_chars_in_filename"] >= 3:
         reasons.append({"reason": "Multiple special characters in filename", "points": 15})
 
-    # Medium severity
     if f["has_bait_words"]:
         reasons.append({"reason": "Bait words in URL", "points": 15})
     if f["very_long_query"]:
@@ -246,21 +297,18 @@ def score_content(u: str, sector="general") -> dict:
     if f["contains_double_ext"]:
         reasons.append({"reason": "Filename has double extensions", "points": 10})
 
-    # Low severity
     if not f["recognized_ext"]:
         reasons.append({"reason": "Unknown or missing extension", "points": 5})
 
-    # Safe bonus
     if (f["is_known_doc"] or f["is_image"]) and not reasons:
         reasons.append({"reason": "Known doc/image type", "points": -10})
 
-    # Sector boost
     reasons = apply_sector_boost(reasons, sector)
-
-    # ML integration
     reasons = apply_ml_score(f, reasons)
 
     score = score_from_reasons(reasons)
+    status = status_from_score(score)
+
     return {
         "type": "content",
         "url": u,
@@ -268,6 +316,6 @@ def score_content(u: str, sector="general") -> dict:
         "features": f,
         "reasons": reasons,
         "score": score,
-        "status": status_from_score(score),
+        "status": status,
         "timestamp": datetime.utcnow().isoformat() + "Z"
     }
