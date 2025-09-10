@@ -92,80 +92,102 @@ from urllib.parse import urlparse
 
 # ---------- URL scoring ----------
 def score_input(u: str, sector="general") -> dict:
+    """
+    Decide scoring based on whether input is a valid URL
+    """
     if not is_valid_url(u):
         return {
             "type": "unknown",
             "input": u,
             "sector": sector,
             "features": {},
-            "reasons": [{"reason": "Input is not a valid URL", "points": 0}],
-            "score": 0,
-            "status": "Unknown",
+            "reasons": [{"reason": "Input is not a valid URL", "points": 50}],
+            "score": 99,
+            "status": "High Risk",
             "timestamp": datetime.utcnow().isoformat() + "Z"
         }
+
+    # valid URL → pass to your existing scoring engine
     return score_url(u, sector)
 
 def score_url(u: str, sector="general") -> dict:
     f = extract_url_features(u)
     reasons = []
 
-    # --- Whitelist ---
-    if f.get("is_legit", False):
-        reasons.append({"reason": "Domain in top 1M whitelist", "points": -30})
+    # --- 1️⃣ WHITELIST / SAFE DOMAINS ---
+    def score_url(u: str, sector="general") -> dict:
+        f = extract_url_features(u)
+        reasons = []
 
-    # --- High severity ---
+    is_legit=f.get("is_legit", False)
+
+    # --- 1️⃣ WHITELIST / SAFE DOMAINS (hard override) ---
+    if is_legit:
+        reasons.append({"reason": "Domain is in whitelist (legit)", "points": -30})
+        return {
+            "type": "url",
+            "url": u,
+            "sector": sector,
+            "features": f,
+            "reasons": reasons,
+            "score": 0,   # force SAFE
+            "status": "Safe",
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+
+    # --- 2️⃣ HIGH SEVERITY CHECKS ---
     if f.get("host_is_ip", False):
         reasons.append({"reason": "Host is an IP address", "points": 30})
-
     if f.get("uncommon_port", False):
         reasons.append({"reason": f"Uncommon port {f.get('port')}", "points": 20})
 
-    # --- Punycode & Homograph ---
+    # --- 3️⃣ PUNYCODE / HOMOGRAPH ---
     if "punycode" in f:
         p = f["punycode"]
         if p.get("is_punycode", False):
+            reason_text = "Suspicious Punycode host"
             if p.get("contains_homoglyphs", False):
-                reasons.append({
-                    "reason": "Suspicious Punycode host with homoglyphs",
-                    "points": p.get("punycode_severity", 20)
-                })
+                reason_text += " with homoglyphs"
+                points = p.get("punycode_severity", 20)
             else:
-                reasons.append({
-                    "reason": "Punycode host",
-                    "points": p.get("punycode_severity", 15)
-                })
+                points = p.get("punycode_severity", 15)
+            reasons.append({"reason": reason_text, "points": points})
 
-    # --- Suspicious TLD ---
+    # --- 4️⃣ BRAND SIMILARITY / SUSPICIOUS WORDS (ONLY IF NOT LEGIT) ---
+    if not is_legit:
+        brand_sim = f.get("brand_similarity", {})
+        if isinstance(brand_sim, dict):
+            for brand, dist in brand_sim.items():
+                if dist <= 2:
+                    reasons.append({
+                        "reason": f"Domain similar to brand '{brand}'",
+                        "points": 25 if dist == 1 else 15
+                    })
+        elif f.get("brand_similarity_score", 99) <= 2:
+            reasons.append({"reason": "Brand similarity detected", "points": 10})
+
+        if f.get("word_hits_count", 0) > 0:
+            reasons.append({
+                "reason": f"Suspicious words in URL: {f['word_hits']}",
+                "points": 10
+            })
+
+    # --- 5️⃣ TLD CHECKS ---
     if f.get("tld_suspicious", False):
         reasons.append({"reason": f"Suspicious TLD .{f.get('tld','')}", "points": 20})
 
-    # --- Domain age ---
+    # --- 6️⃣ DOMAIN AGE ---
     age = f.get("domain_age_days", -1)
     if 0 <= age < 30:
         reasons.append({"reason": f"Domain very new ({age} days)", "points": 30})
     elif 0 <= age < 180:
         reasons.append({"reason": f"Domain fairly new ({age} days)", "points": 15})
 
-    # --- SSL ---
+    # --- 7️⃣ SSL CHECK ---
     if f.get("scheme") == "https" and not f.get("ssl_valid", 1):
         reasons.append({"reason": "HTTPS but invalid/expired SSL", "points": 15})
 
-    # --- Brand similarity ---
-    if isinstance(f.get("brand_similarity"), dict):
-        for brand, dist in f["brand_similarity"].items():
-            if dist <= 2:
-                reasons.append({
-                    "reason": f"Domain similar to brand '{brand}'",
-                    "points": 25 if dist == 1 else 15
-                })
-    elif f.get("brand_similarity_score", 99) <= 2:
-        reasons.append({"reason": "Brand similarity detected", "points": 10})
-
-    # --- Redirects ---
-    if f.get("redirect_count", 0) > 3:
-        reasons.append({"reason": f"Excessive redirects ({f['redirect_count']})", "points": 10})
-
-    # --- Medium severity ---
+    # --- 8️⃣ MEDIUM SEVERITY CHECKS ---
     if f.get("contains_at", False):
         reasons.append({"reason": "@ symbol in URL", "points": 15})
     if f.get("hyphens", 0) >= 3:
@@ -173,45 +195,40 @@ def score_url(u: str, sector="general") -> dict:
     if f.get("subdomain_depth", 0) >= 4:
         reasons.append({"reason": "Deep subdomain nesting", "points": 15})
 
-    # --- Digits in domain ---
     digits_ratio = f.get("digits_ratio", 0)
     if digits_ratio > 0.5:
         reasons.append({"reason": "Host mostly digits", "points": 25})
     elif digits_ratio > 0.3:
         reasons.append({"reason": "High digits ratio in host", "points": 15})
 
-    # --- Length ---
     length = f.get("length", 0)
     if length > 120:
         reasons.append({"reason": "Very long URL", "points": 20})
     elif length > 75:
         reasons.append({"reason": "Long URL", "points": 10})
 
-    # --- Suspicious words ---
-    if f.get("word_hits"):
-        reasons.append({
-            "reason": f"Suspicious words in path: {', '.join(f['word_hits'])}",
-            "points": 20
-        })
+    # --- 9️⃣ REDIRECTS ---
+    if f.get("redirect_count", 0) > 3:
+        reasons.append({"reason": f"Excessive redirects ({f['redirect_count']})", "points": 10})
 
-    # --- Safe bonuses ---
-    if f.get("scheme") == "https" and not reasons:
-        reasons.append({"reason": "HTTPS present (safe signal)", "points": -5})
-    if age > 365 and not reasons:
-        reasons.append({"reason": "Domain older than 1 year (trust signal)", "points": -5})
-
-    # --- NLP Phish ---
+    # --- 10️⃣ NLP / PHISHING CHECKS ---
     nlp_score = f.get("nlp_phish_score", 0)
     if nlp_score > 0.6:
         reasons.append({"reason": "Phishing language detected (NLP)", "points": 25})
     elif nlp_score > 0.3:
         reasons.append({"reason": "Suspicious wording (NLP)", "points": 10})
 
-    # --- Sector + ML ---
+    # --- 11️⃣ SAFE BONUSES ---
+    if f.get("scheme") == "https" and not reasons:
+        reasons.append({"reason": "HTTPS present (safe signal)", "points": -5})
+    if age > 365 and not reasons:
+        reasons.append({"reason": "Domain older than 1 year (trust signal)", "points": -5})
+
+    # --- 12️⃣ SECTOR + ML SCORING ---
     reasons = apply_sector_boost(reasons, sector)
     reasons = apply_ml_score(f, reasons)
 
-    # --- Final score ---
+    # --- 13️⃣ FINAL SCORE ---
     score = score_from_reasons(reasons)
     status = status_from_score(score)
 
@@ -225,6 +242,7 @@ def score_url(u: str, sector="general") -> dict:
         "status": status,
         "timestamp": datetime.utcnow().isoformat() + "Z"
     }
+
 # ---------- APP ----------
 def score_app(u: str, platform="android", sector="general") -> dict:
     f = extract_app_features(u, platform=platform)
