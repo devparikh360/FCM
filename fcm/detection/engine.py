@@ -1,15 +1,16 @@
+# detection/engine.py
 from datetime import datetime
 from detection.rules import score_from_reasons, status_from_score
-from .features_url import extract_url_features
+from .features_url import extract_url_features, is_valid_url
 from .features_app import extract_app_features
 from .features_content import extract_content_features
 import os
 import numpy as np
 import xgboost as xgb
 import json
-from .features_url import extract_url_features, is_valid_url
-
-
+import requests
+import tldextract
+from urllib.parse import urlparse
 
 # --- Load ML model ---
 ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -28,12 +29,42 @@ if os.path.exists(MODEL_PATH):
     else:
         try:
             TRAINED_FEATURES = ml_model.get_booster().feature_names
-        except:
+        except Exception:
             TRAINED_FEATURES = []
 else:
     print("⚠️ ML model not found. Only rule-based scoring will be used.")
 
-# --- helper: apply sector boost ---
+# --- Load legit domains (normalized to registrable domain: domain.tld) ---
+LEGIT_FILE = os.path.join(ROOT_DIR, "data", "leg.txt")
+
+def load_legit_domains(path):
+    s = set()
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip().lower()
+                if not line:
+                    continue
+                # strip scheme if present and take hostname
+                try:
+                    p = urlparse(line if line.startswith(("http://","https://")) else "http://" + line)
+                    host = (p.hostname or line).lower()
+                except Exception:
+                    host = line
+                if host.startswith("www."):
+                    host = host[4:]
+                ext = tldextract.extract(host)
+                if ext.domain and ext.suffix:
+                    s.add(f"{ext.domain}.{ext.suffix}")
+                else:
+                    s.add(host)
+    except Exception as e:
+        print("Could not load legit domains from", path, ":", e)
+    return s
+
+LEGIT_DOMAINS = load_legit_domains(LEGIT_FILE)
+
+# --- Helpers ---
 def apply_sector_boost(reasons, sector):
     if sector in ("banking", "finance", "payment"):
         reasons.append({"reason": "Banking/finance related → higher risk", "points": 10})
@@ -41,60 +72,90 @@ def apply_sector_boost(reasons, sector):
         reasons.append({"reason": "Social/messaging related → phishing prone", "points": 5})
     return reasons
 
-# --- helper: apply ML score ---
 def apply_ml_score(features, reasons):
+    """
+    Append ML probability to reasons as a single, non-accusatory entry:
+      "ML probability: 0.42" with points = int(prob*100)
+    (We no longer append "ML model flagged as suspicious".)
+    """
     if ml_model is None or not TRAINED_FEATURES:
         return reasons
 
     X_vec = []
     for f_name in TRAINED_FEATURES:
         val = features.get(f_name, 0)
-
         if isinstance(val, list):
+            # collapse lists -> string -> hashed number
             val = "_".join([str(v) for v in val])
-        if isinstance(val, str):
+            val = hash(val) % 1000
+        elif isinstance(val, str):
             val = hash(val) % 1000
         elif isinstance(val, bool):
             val = int(val)
+        elif isinstance(val, dict):
+            # don't attempt to serialize large dicts — use fallback 0
+            val = 0
         elif val is None:
             val = 0
         X_vec.append(val)
 
     X_vec = np.array([X_vec])
-
     try:
-        ml_prob = ml_model.predict_proba(X_vec)[0][1]
-
-        print("ML input vector:", X_vec)
-        print("ML predicted probability:", ml_prob)
-
+        ml_prob = float(ml_model.predict_proba(X_vec)[0][1])
         ml_points = int(ml_prob * 100)
-        if ml_points > 0:
-            reasons.append({
-                "reason": "ML model flagged as suspicious",
-                "points": ml_points
-            })
+        reasons.append({"reason": f"ML probability: {ml_prob:.2f}", "points": ml_points})
     except Exception as e:
-        reasons.append({"reason": "ML scoring failed", "points": 0})
         print("⚠️ ML model scoring failed:", e)
+        reasons.append({"reason": "ML scoring failed", "points": 0})
 
     return reasons
 
-#-------ports----------------
-
+# ------- ports / reachability ----------------
 def check_uncommon_port(parsed) -> bool:
-    if parsed.port is None:
+    if parsed is None or parsed.port is None:
         return False
-    return parsed.port not in [80, 443]
+    return parsed.port not in (80, 443)
 
-from datetime import datetime
-from urllib.parse import urlparse
+#import requests
+
+def url_exists(u: str, timeout: int = 5) -> bool:
+    """Check if a URL is reachable (try HEAD first, then GET fallback)."""
+    try:
+        # Ensure scheme
+        url_to_check = u if u.startswith(("http://", "https://")) else "http://" + u
+        
+        # First try HEAD
+        try:
+            resp = requests.head(url_to_check, allow_redirects=True, timeout=timeout)
+            if 200 <= resp.status_code < 400:
+                return True
+        except requests.RequestException:
+            pass
+        
+        # Fallback to GET if HEAD fails
+        resp = requests.get(url_to_check, allow_redirects=True, timeout=timeout, headers={"User-Agent": "Mozilla/5.0"})
+        return 200 <= resp.status_code < 400
+    
+    except Exception:
+        return False
+
+
+def get_registrable_domain(u: str) -> str:
+    """Return domain.tld for the passed URL/host (normalized, lower)."""
+    try:
+        p = urlparse(u if u.startswith(("http://","https://")) else "http://" + u)
+        host = (p.hostname or "").lower()
+        if host.startswith("www."):
+            host = host[4:]
+        ext = tldextract.extract(host)
+        if ext.domain and ext.suffix:
+            return f"{ext.domain}.{ext.suffix}"
+        return host
+    except Exception:
+        return ""
 
 # ---------- URL scoring ----------
 def score_input(u: str, sector="general") -> dict:
-    """
-    Decide scoring based on whether input is a valid URL
-    """
     if not is_valid_url(u):
         return {
             "type": "unknown",
@@ -106,34 +167,28 @@ def score_input(u: str, sector="general") -> dict:
             "status": "High Risk",
             "timestamp": datetime.utcnow().isoformat() + "Z"
         }
-
-    # valid URL → pass to your existing scoring engine
     return score_url(u, sector)
 
 def score_url(u: str, sector="general") -> dict:
     f = extract_url_features(u)
     reasons = []
 
-    # --- 1️⃣ WHITELIST / SAFE DOMAINS ---
-    def score_url(u: str, sector="general") -> dict:
-        f = extract_url_features(u)
-        reasons = []
+    # Normalize host for legit check
+    host = f.get("host", "").lower().strip()
+    if host.startswith("www."):
+        host = host[4:]
 
-    is_legit=f.get("is_legit", False)
+    # --- LOAD LEGIT LIST ---
+    legit_domains = []
+    legit_file = os.path.join(ROOT_DIR, "legit.txt")
+    if os.path.exists(legit_file):
+        with open(legit_file, "r") as lf:
+            legit_domains = [line.strip().lower() for line in lf if line.strip()]
 
-    # --- 1️⃣ WHITELIST / SAFE DOMAINS (hard override) ---
+    # --- LEGIT EXACT MATCH ---
+    is_legit = host in legit_domains
     if is_legit:
-        reasons.append({"reason": "Domain is in whitelist (legit)", "points": -30})
-        return {
-            "type": "url",
-            "url": u,
-            "sector": sector,
-            "features": f,
-            "reasons": reasons,
-            "score": 0,   # force SAFE
-            "status": "Safe",
-            "timestamp": datetime.utcnow().isoformat() + "Z"
-        }
+        reasons.append({"reason": "Domain marked as legit", "points": -30})
 
     # --- 2️⃣ HIGH SEVERITY CHECKS ---
     if f.get("host_is_ip", False):
@@ -153,24 +208,18 @@ def score_url(u: str, sector="general") -> dict:
                 points = p.get("punycode_severity", 15)
             reasons.append({"reason": reason_text, "points": points})
 
-    # --- 4️⃣ BRAND SIMILARITY / SUSPICIOUS WORDS (ONLY IF NOT LEGIT) ---
-    if not is_legit:
-        brand_sim = f.get("brand_similarity", {})
-        if isinstance(brand_sim, dict):
-            for brand, dist in brand_sim.items():
-                if dist <= 2:
-                    reasons.append({
-                        "reason": f"Domain similar to brand '{brand}'",
-                        "points": 25 if dist == 1 else 15
-                    })
-        elif f.get("brand_similarity_score", 99) <= 2:
-            reasons.append({"reason": "Brand similarity detected", "points": 10})
-
-        if f.get("word_hits_count", 0) > 0:
-            reasons.append({
-                "reason": f"Suspicious words in URL: {f['word_hits']}",
-                "points": 10
-            })
+    # --- 4️⃣ BRAND SIMILARITY ---
+    # Always run brand similarity even if domain is legit
+    brand_sim = f.get("brand_similarity", {})
+    if isinstance(brand_sim, dict):
+        for brand, dist in brand_sim.items():
+            if dist <= 2:
+                reasons.append({
+                    "reason": f"Domain similar to brand '{brand}'",
+                    "points": 35 if dist == 1 else 25
+                })
+    elif f.get("brand_similarity_score", 99) <= 2:
+        reasons.append({"reason": "Brand similarity detected", "points": 20})
 
     # --- 5️⃣ TLD CHECKS ---
     if f.get("tld_suspicious", False):
@@ -211,7 +260,7 @@ def score_url(u: str, sector="general") -> dict:
     if f.get("redirect_count", 0) > 3:
         reasons.append({"reason": f"Excessive redirects ({f['redirect_count']})", "points": 10})
 
-    # --- 10️⃣ NLP / PHISHING CHECKS ---
+    # --- 🔟 NLP / PHISHING CHECKS ---
     nlp_score = f.get("nlp_phish_score", 0)
     if nlp_score > 0.6:
         reasons.append({"reason": "Phishing language detected (NLP)", "points": 25})
@@ -224,11 +273,14 @@ def score_url(u: str, sector="general") -> dict:
     if age > 365 and not reasons:
         reasons.append({"reason": "Domain older than 1 year (trust signal)", "points": -5})
 
-    # --- 12️⃣ SECTOR + ML SCORING ---
+    # --- 12️⃣ SECTOR SCORING ---
     reasons = apply_sector_boost(reasons, sector)
-    reasons = apply_ml_score(f, reasons)
 
-    # --- 13️⃣ FINAL SCORE ---
+    # --- 13️⃣ URL REACHABILITY (LAST STEP) ---
+    if not url_exists(u):
+        reasons.append({"reason": "URL not reachable", "points": 40})
+
+    # --- 14️⃣ FINAL SCORE ---
     score = score_from_reasons(reasons)
     status = status_from_score(score)
 
@@ -243,28 +295,29 @@ def score_url(u: str, sector="general") -> dict:
         "timestamp": datetime.utcnow().isoformat() + "Z"
     }
 
-# ---------- APP ----------
+
+# ---------- APP & CONTENT scoring (unchanged logic but kept here for completeness) ----------
 def score_app(u: str, platform="android", sector="general") -> dict:
     f = extract_app_features(u, platform=platform)
     reasons = []
 
-    if f["direct_apk"]:
+    if f.get("direct_apk"):
         reasons.append({"reason": "Direct APK download (bypass store)", "points": 40})
     if f.get("direct_ipa", False):
         reasons.append({"reason": "Direct IPA download (bypass store)", "points": 40})
 
-    if not f["is_official_store"]:
+    if not f.get("is_official_store", True):
         reasons.append({"reason": "Not official app store", "points": 25})
-    if f["scam_hits"]:
+    if f.get("scam_hits"):
         reasons.append({"reason": f"Scam keywords: {', '.join(f['scam_hits'])}", "points": 20})
     if f.get("shortened", False):
         reasons.append({"reason": "Shortened URL (bit.ly/tinyurl/t.co)", "points": 15})
-    if f.get("contains_id_param", False) and not f["is_official_store"]:
+    if f.get("contains_id_param", False) and not f.get("is_official_store", True):
         reasons.append({"reason": "Contains suspicious ID parameter", "points": 10})
 
-    if f["length"] > 100:
+    if f.get("length", 0) > 100:
         reasons.append({"reason": "Very long URL", "points": 10})
-    elif f["length"] < 15:
+    elif f.get("length", 0) < 15:
         reasons.append({"reason": "Extremely short URL", "points": 10})
 
     if not f.get("https", False):
@@ -275,7 +328,7 @@ def score_app(u: str, platform="android", sector="general") -> dict:
     if platform == "ios" and f.get("direct_apk", False):
         reasons.append({"reason": "Android APK on iOS platform", "points": 20})
 
-    if f["is_official_store"] and not reasons:
+    if f.get("is_official_store", False) and not reasons:
         reasons.append({"reason": "Official store link (safe)", "points": -15})
 
     reasons = apply_sector_boost(reasons, sector)
@@ -294,31 +347,30 @@ def score_app(u: str, platform="android", sector="general") -> dict:
         "timestamp": datetime.utcnow().isoformat() + "Z"
     }
 
-# ---------- CONTENT ----------
 def score_content(u: str, sector="general") -> dict:
     f = extract_content_features(u)
     reasons = []
 
-    if f["is_dangerous"]:
-        reasons.append({"reason": f"Dangerous file type {f['ext']}", "points": 40})
-    if f["suspicious_patterns"]:
+    if f.get("is_dangerous"):
+        reasons.append({"reason": f"Dangerous file type {f.get('ext')}", "points": 40})
+    if f.get("suspicious_patterns"):
         reasons.append({"reason": "Suspicious pattern detected (login/password/numeric)", "points": 25})
-    if f["digits_in_filename_ratio"] > 0.4:
+    if f.get("digits_in_filename_ratio", 0) > 0.4:
         reasons.append({"reason": "High digit ratio in filename", "points": 20})
-    if f["special_chars_in_filename"] >= 3:
+    if f.get("special_chars_in_filename", 0) >= 3:
         reasons.append({"reason": "Multiple special characters in filename", "points": 15})
 
-    if f["has_bait_words"]:
+    if f.get("has_bait_words"):
         reasons.append({"reason": "Bait words in URL", "points": 15})
-    if f["very_long_query"]:
+    if f.get("very_long_query"):
         reasons.append({"reason": "Very long querystring", "points": 15})
-    if f["contains_double_ext"]:
+    if f.get("contains_double_ext"):
         reasons.append({"reason": "Filename has double extensions", "points": 10})
 
-    if not f["recognized_ext"]:
+    if not f.get("recognized_ext"):
         reasons.append({"reason": "Unknown or missing extension", "points": 5})
 
-    if (f["is_known_doc"] or f["is_image"]) and not reasons:
+    if (f.get("is_known_doc") or f.get("is_image")) and not reasons:
         reasons.append({"reason": "Known doc/image type", "points": -10})
 
     reasons = apply_sector_boost(reasons, sector)

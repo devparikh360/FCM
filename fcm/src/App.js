@@ -138,32 +138,34 @@ async function checkUrl(url) {
         <h1 className="text-2xl font-bold tracking-wide">FakeCatcherMan</h1>
 
         <div
-          className="nav-actions"
-          style={{
-            display: "flex",
-            gap: "1rem",
-            alignItems: "center",
-          }}
-        >
-          <button className="nav-btn" onClick={scrollToTop}>
-            Home
-          </button>
+  className="nav-actions"
+  style={{
+    display: "flex",
+    gap: "1rem",
+    alignItems: "center",
+  }}
+>
+  <button className="nav-btn" onClick={scrollToTop}>
+    Home
+  </button>
 
-          {user && (
-            <button className="nav-btn" onClick={goToDashboard}>
-              Dashboard
-            </button>
-          )}
-          <div>
-            {!user ? (
-              <button onClick={login}>Login with Google</button>
-            ) : (
-              <>
-                <button onClick={logout}>Logout</button>
-              </>
-            )}
-          </div>
-        </div>
+  {user && (
+    <button className="nav-btn" onClick={goToDashboard}>
+      Dashboard
+    </button>
+  )}
+
+  {!user ? (
+    <button className="nav-btn" onClick={login}>
+      Login with Google
+    </button>
+  ) : (
+    <button className="nav-btn" onClick={logout}>
+      Logout
+    </button>
+  )}
+</div>
+
       </nav>
 
       {/* Hero Section */}
